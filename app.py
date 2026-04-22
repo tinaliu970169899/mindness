@@ -1,70 +1,64 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 1. 網頁外觀設定 (換上正念的風格)
-st.set_page_config(page_title="正念衛教專屬空間", page_icon="🌿", layout="wide")
+# 1. 網頁頁面設定 (正念清爽風格)
+st.set_page_config(page_title="正念衛教空間", page_icon="🌿", layout="centered")
 
-with st.sidebar:
-    st.title("🌿 正念導航控制台")
-    st.markdown("這是我專屬打造的正念衛教智能系統。")
-    st.divider()
-    if st.button("🗑️ 重新開始對話"):
-        st.session_state.messages = []
-        # 加入預設的歡迎語
-        st.session_state.messages.append({"role": "assistant", "content": "你好！我是你的專屬正念導航員 🌿 \n\n想了解什麼是正念，或者現在就想開始一段簡單的放鬆練習嗎？請隨時告訴我！"})
-        st.rerun()
+# 隱藏 Streamlit 預設的選單按鈕，讓它看起來更像真正的衛教網站
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+    """, unsafe_allow_html=True)
 
-st.title("🌿 正念衛教核心 AI 助手")
-
-# 2. 設定金鑰
+# 2. 設定 AI 金鑰
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ==========================================
-# 3. 【AI Studio 的靈魂：您的專屬設計與提示詞】
+# 3. 【這就是您在 AI Studio 的靈魂】
+# 我們把系統提示詞設定成「網站編輯員」
 # ==========================================
 my_system_prompt = """
-你是一個專業、溫暖且具備臨床心理學素養的正念導航員。
-請依照以下風格與結構與使用者互動：
-
-【特色與風格】
-1. 有故事感：一開始就讓使用者覺得被帶入平靜、放鬆的情境。
-2. 有教育感：內容簡單，邏輯清楚，讓新手也能快速理解。
-3. 視覺風格：排版要現代、乾淨、有層次感（多使用條列式或粗體重點）。
-4. 語氣：自然、誠懇、有說服力，像是一個值得信賴的專業朋友，絕對不要生硬。
-
-【核心內容範圍】
-當使用者詢問時，請自然地帶入以下資訊：
-- 正念的介紹與衛教說明。
-- 什麼時候適合做正念？
-- 提供可以進行正念練習的具體方法或情境。
-- 結尾請總是給予一句溫暖的總結與鼓勵 (CTA)。
+你是一個專業的「正念衛教網站編輯」。
+請依照使用者的需求，撰寫出一篇具有故事感、教育意義且視覺美觀的衛教文章。
+排版請多使用 Markdown 語法（例如：# 大標題, ## 小標題, **粗體**, 條列式）。
+語氣要溫暖且專業，結尾要有一個暖心的鼓勵。
 """
 
-# 4. 初始化模型
 model = genai.GenerativeModel(
     model_name='gemini-1.5-flash',
     system_instruction=my_system_prompt
 )
 
-# 5. 聊天室核心運作
-if "messages" not in st.session_state:
-    # 預設第一句話，讓畫面不再全白！
-    st.session_state.messages = [
-        {"role": "assistant", "content": "你好！我是你的專屬正念導航員 🌿 \n\n想了解什麼是正念，或者現在就想開始一段簡單的放鬆練習嗎？請隨時跟我說！"}
-    ]
+# 4. 網站標題與視覺
+st.image("https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=1000", use_column_width=True)
+st.title("🌿 找回內心的平靜：正念衛教專區")
+st.subheader("Mindfulness Education Space")
+st.divider()
 
-# 顯示對話紀錄
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+# 5. 自動產生衛教內容 (一打開就執行)
+# 我們讓 AI 針對「正念衛教」的主題自動寫出一篇精美的文章
+@st.cache_data # 這可以讓網站跑得更快，不必每次重整都重新問 AI
+def get_initial_content():
+    response = model.generate_content("請幫我撰寫一份完整的『正念初學者衛教指南』，包含什麼是正念、好處、以及三個簡單的練習方法。")
+    return response.text
 
-# 接收輸入與產出回覆
-if prompt := st.chat_input("請輸入您的問題，例如：請幫我介紹什麼是正念？"):
-    st.chat_message("user").markdown(prompt)
-    st.session_state.messages.append({"role": "user", "content": prompt})
+with st.spinner('正在為您佈置平靜的衛教空間...'):
+    content = get_initial_content()
+    st.markdown(content)
 
-    with st.chat_message("assistant"):
-        response = model.generate_content(prompt)
-        st.markdown(response.text)
-    
-    st.session_state.messages.append({"role": "assistant", "content": response.text})
+# 6. (選配) 下方保留一個與專家互動的小框框
+st.divider()
+st.write("### 💬 還有其他正念方面的疑問嗎？")
+user_q = st.text_input("您可以輸入感興趣的主題（例如：失眠、壓力）：")
+
+if user_q:
+    with st.spinner('正在為您查詢建議...'):
+        q_response = model.generate_content(f"關於使用者提到的「{user_q}」，請提供相關的正念練習建議。")
+        st.info(q_response.text)
+
+# 頁尾
+st.divider()
+st.caption("© 2026 正念衛教空間 | 以 Google Gemini 核心技術驅動")
