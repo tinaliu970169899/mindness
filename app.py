@@ -33,7 +33,7 @@ my_system_prompt = """
 
 # 在初始化模型時，把系統提示詞 (system_instruction) 加進去
 model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
+    model_name='gemini-1.5-flash-latest',
     system_instruction=my_system_prompt
 )
 
